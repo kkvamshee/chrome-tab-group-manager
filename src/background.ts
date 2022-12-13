@@ -1,5 +1,5 @@
-import { ChromeTabManagerApp } from "./app/chrome-tab-manager-app";
+import { BrowserTabManagerApp } from "./app/browser-tab-manager-app";
 
-let app: ChromeTabManagerApp = new ChromeTabManagerApp();
+let app: BrowserTabManagerApp = new BrowserTabManagerApp();
 app.init();
 

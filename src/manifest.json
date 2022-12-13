@@ -3,6 +3,10 @@
     "host_permissions": [
         "<all_urls>"  
     ],
+    "permissions": [
+        "tabs",
+        "tabGroups"
+    ],
     "background": {
         "service_worker": "background.js"
     }

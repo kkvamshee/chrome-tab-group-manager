@@ -13,10 +13,10 @@ const manifestCopyOptions = {
          }));
       }
    }]
-}
+};
 
 module.exports = {
-   mode: "production",
+   mode: 'none',
    entry: {
       background: path.resolve(__dirname, "..", "src", "background.ts"),
    },
