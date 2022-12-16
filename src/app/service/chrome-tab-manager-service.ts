@@ -93,7 +93,7 @@ export class ChromeTabManagerService {
         if (isNullOrUndefined(tabGroup)) {
             // if tabGroup is null or undefined, move tab to open area i.e., out of any tabGroup
             // TODO FIX: doesnt work for last tab
-            await chrome.tabs.move(tab.id!, {index: tab.index + 1});
+            await chrome.tabs.move(tab.id!, {index: 0});
             return;
         }
 
