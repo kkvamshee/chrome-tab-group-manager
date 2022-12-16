@@ -1,0 +1,134 @@
+import { DUMMY_GROUP_TITLE, MIN_NUMBER_TABS_TO_GROUP } from "../util/constants";
+import { isDefined, isNullOrUndefined } from "../util/util";
+import { getSubdomain, parse } from "tldjs";
+
+export class ChromeTabManagerService {
+    private static _instance: ChromeTabManagerService;
+
+    private constructor() {}
+
+    private groupsCreated: Map<string, chrome.tabGroups.TabGroup> = new Map();    
+
+    public static getInstance(): ChromeTabManagerService {
+        if (isDefined(this._instance)) {
+            return this._instance;
+        }
+
+        this._instance = new ChromeTabManagerService();
+        return this._instance;
+    }
+
+    /**
+     * get tab key (domain in this case)
+     * check if group already exists with this key
+     *      if current tab exists in the group, ignore
+     *      else move current tab to the group found
+     * get list of tabs in window with the same key
+     * if this list is big enough, group these tabs
+     */
+    public async handleNewUrl(tab: chrome.tabs.Tab): Promise<void> {
+        console.log(`handling new url update: ${tab.url}`);
+        const groupingKey: string = this.getGroupingIdentifier(tab);
+        let tabGroup = this.getTabGroupFromIdentifier(groupingKey);
+
+        if (tab.groupId > -1 && this.isTabInGroup(tab, tabGroup)) return;
+        if (isDefined(tabGroup)) {
+            await this.moveTabToGroup(tab, tabGroup!);
+            return;
+        }
+        if (tab.groupId > -1) {
+            await this.moveTabToGroup(tab, null);
+            return;
+        }
+
+        const similarTabs: Array<chrome.tabs.Tab> = await this.getAllTabsWithIdentifer(groupingKey, tab.windowId);
+        if (similarTabs.length < MIN_NUMBER_TABS_TO_GROUP) return;
+        const groupMetadataProperties: chrome.tabGroups.UpdateProperties = this.generateGroupMetadataProperties(tab);
+        console.log(`groupMetaData Properties: ${JSON.stringify(groupMetadataProperties, null, 4)}`);
+        this.createTabGroup(similarTabs, groupMetadataProperties)
+    }
+
+    private generateGroupMetadataProperties(tab: chrome.tabs.Tab): chrome.tabGroups.UpdateProperties {
+        const collapsed: boolean = false;
+
+        let title = this.getGroupingIdentifier(tab);
+        title = title ? title : DUMMY_GROUP_TITLE;
+
+        return {collapsed,title};
+    }
+
+    private getGroupingIdentifier(tab: chrome.tabs.Tab): string {
+        // returns identifier for a tab which will be used to identify similar tabs
+        console.debug(`getting grouping identifier for tab with id ${tab.id}. Find more tab info in next line`);
+        let urlParts = parse(isDefined(tab.url) ? tab.url! : '');
+        if (urlParts.domain && urlParts.publicSuffix) {
+            return urlParts.domain?.substring(0, urlParts.domain.length - urlParts.publicSuffix?.length - 1);
+        }
+        
+        return '';
+    }
+
+    private getTabGroupFromIdentifier(id: string): chrome.tabGroups.TabGroup | null {
+        // takes grouping identifier and returns a tabGroup if created already
+        console.debug(`checking if a tab group exists already for grouping identifier: ${id}`);
+        if (isNullOrUndefined(id)) return null;
+
+        return this.groupsCreated.has(id) ? this.groupsCreated.get(id)! : null;
+    }
+
+    private isTabInGroup(tab: chrome.tabs.Tab, tabGroup: chrome.tabGroups.TabGroup | null): boolean {
+        // checks if argument <tab> is present in the argument <tabGroup>
+        if (isNullOrUndefined(tabGroup) || isNullOrUndefined(tabGroup!.id)) return false; 
+
+        return tab.groupId === tabGroup!.id;
+    }
+
+    private async moveTabToGroup(tab: chrome.tabs.Tab, tabGroup: chrome.tabGroups.TabGroup | null): Promise<void> {
+        // moves argument <tab> into the argument <tabGroup>. returns true if the tab is moved
+        console.debug(tab);
+        console.debug(tabGroup);
+
+        if (isNullOrUndefined(tab)) return;
+
+        if (isNullOrUndefined(tabGroup)) {
+            // if tabGroup is null or undefined, move tab to open area i.e., out of any tabGroup
+            // TODO FIX: doesnt work for last tab
+            await chrome.tabs.move(tab.id!, {index: tab.index + 1});
+            return;
+        }
+
+        if (this.isTabInGroup(tab, tabGroup)) {
+            console.debug('Tab is already placed in correct group. No need to move the tab');
+            return;
+        }
+
+        let groupOptions: chrome.tabs.GroupOptions = {
+            groupId: tabGroup!.id,
+            tabIds: tab.id
+        }
+        await chrome.tabs.group(groupOptions);
+        return;
+    }
+
+    private async getAllTabsWithIdentifer(id: string, windowId: number): Promise<Array<chrome.tabs.Tab>> {
+        // get all tabs in the argument <window> having same identifier as argument <id>
+        let tabs: Array<chrome.tabs.Tab> = await chrome.tabs.query({
+            windowId: windowId,
+        });        
+        let similarTabs: Array<chrome.tabs.Tab> = tabs.filter(tab => this.getGroupingIdentifier(tab) === id);
+
+        return similarTabs;
+    }
+
+    private async createTabGroup(tabs: Array<chrome.tabs.Tab>, updateProperties: chrome.tabGroups.UpdateProperties): Promise<chrome.tabGroups.TabGroup> {
+        const tabIds: Array<number> = tabs.filter(tab => isDefined(tab.id)).map(tab => tab.id!);
+        const groupOptions: chrome.tabs.GroupOptions = {
+            tabIds: tabIds
+        };
+        let tabGroupId: number = await chrome.tabs.group(groupOptions);
+
+        const tabGroup: chrome.tabGroups.TabGroup = await chrome.tabGroups.update(tabGroupId, updateProperties);
+        this.groupsCreated.set(updateProperties.title!, tabGroup);
+        return tabGroup;
+    }
+}
