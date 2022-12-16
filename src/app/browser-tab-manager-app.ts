@@ -1,3 +1,4 @@
+import { getSubdomain } from "tldjs";
 import { handleTabDeletion, handleTabUpdate } from "./handlers/tab-event-handlers";
 
 export class BrowserTabManagerApp {
@@ -6,7 +7,7 @@ export class BrowserTabManagerApp {
     }
 
     init():void {
-        this.registerListeners();        
+        this.registerListeners();
     }
 
     private registerListeners(): void {        

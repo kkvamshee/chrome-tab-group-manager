@@ -16,7 +16,7 @@ const manifestCopyOptions = {
 };
 
 module.exports = {
-   mode: 'none',
+   mode: 'production',
    entry: {
       background: path.resolve(__dirname, "..", "src", "background.ts"),
    },
