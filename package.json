@@ -1,6 +1,6 @@
 {
   "name": "chrome-tab-group-manager",
-  "version": "1.0.5",
+  "version": "1.1.0",
   "description": "browser extension to easily manage creating and deleting tab groups",
   "main": "index.js",
   "scripts": {
