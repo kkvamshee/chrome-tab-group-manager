@@ -1,1 +1,0 @@
-{"name":"Smart Tab Manager","version":"1.1.0","manifest_version":3,"host_permissions":["<all_urls>"],"permissions":["tabs","tabGroups"],"background":{"service_worker":"background.js"}}
