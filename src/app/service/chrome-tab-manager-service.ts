@@ -52,6 +52,16 @@ export class ChromeTabManagerService {
         this.createTabGroup(similarTabs, groupMetadataProperties)
     }
 
+    public handleTabGroupDeletion(tabGroup: chrome.tabGroups.TabGroup): void {
+        let groupingKey: string = tabGroup.title ? tabGroup.title : '';
+        if (this.groupsCreated.has(groupingKey)) {
+            this.groupsCreated.delete(groupingKey);
+            return;
+        }
+
+        return;
+    }
+
     private generateGroupMetadataProperties(tab: chrome.tabs.Tab): chrome.tabGroups.UpdateProperties {
         const collapsed: boolean = false;
 

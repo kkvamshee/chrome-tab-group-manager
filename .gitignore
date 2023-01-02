@@ -2,3 +2,5 @@ package-lock.json
 node_modules/
 dist.pem
 dist.zip
+dist/
+dist.crx
