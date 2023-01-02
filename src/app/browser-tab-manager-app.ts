@@ -1,5 +1,5 @@
 import { getSubdomain } from "tldjs";
-import { handleTabDeletion, handleTabUpdate } from "./handlers/tab-event-handlers";
+import { handleTabDeletion, handleTabGroupDeletion, handleTabUpdate } from "./handlers/tab-event-handlers";
 
 export class BrowserTabManagerApp {
     constructor() {
@@ -13,5 +13,6 @@ export class BrowserTabManagerApp {
     private registerListeners(): void {        
         chrome.tabs.onUpdated.addListener(handleTabUpdate);
         chrome.tabs.onRemoved.addListener(handleTabDeletion);
+        chrome.tabGroups.onRemoved.addListener(handleTabGroupDeletion);
     }
 }
