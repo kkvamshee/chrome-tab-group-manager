@@ -59,10 +59,13 @@ export class ChromeTabManagerService {
 
     private getGroupingIdentifier(tab: chrome.tabs.Tab): string {
         // returns identifier for a tab which will be used to identify similar tabs
-        console.debug(`getting grouping identifier for tab with id ${tab.id}. Find more tab info in next line`);
+        console.debug(`getting grouping identifier for tab with id ${tab.id}`);
         let urlParts = parse(isDefined(tab.url) ? tab.url! : '');
+        let id: string = ''
         if (urlParts.domain && urlParts.publicSuffix) {
-            return urlParts.domain?.substring(0, urlParts.domain.length - urlParts.publicSuffix?.length - 1);
+            id = urlParts.domain?.substring(0, urlParts.domain.length - urlParts.publicSuffix?.length - 1);
+            console.debug(`Parsed Grouping Identifier: ${id}`);
+            return id;
         }
         
         return '';
@@ -73,7 +76,10 @@ export class ChromeTabManagerService {
         console.debug(`checking if a tab group exists already for grouping identifier: ${id}`);
         if (isNullOrUndefined(id)) return null;
 
-        return this.groupsCreated.has(id) ? this.groupsCreated.get(id)! : null;
+        let tabGroup = this.groupsCreated.has(id) ? this.groupsCreated.get(id)! : null;
+        console.debug(`Tab group found from id: ${id}`);
+        console.debug(tabGroup);
+        return tabGroup;
     }
 
     private isTabInGroup(tab: chrome.tabs.Tab, tabGroup: chrome.tabGroups.TabGroup | null): boolean {
@@ -128,6 +134,8 @@ export class ChromeTabManagerService {
 
         const tabGroup: chrome.tabGroups.TabGroup = await chrome.tabGroups.update(tabGroupId, updateProperties);
         this.groupsCreated.set(updateProperties.title!, tabGroup);
+        console.debug(`groups created`);
+        console.debug(this.groupsCreated);
         return tabGroup;
     }
 }
