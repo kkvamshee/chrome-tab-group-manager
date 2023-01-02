@@ -31,14 +31,18 @@ export class ChromeTabManagerService {
         const groupingKey: string = this.getGroupingIdentifier(tab);
         let tabGroup = this.getTabGroupFromIdentifier(groupingKey);
 
-        if (tab.groupId > -1 && this.isTabInGroup(tab, tabGroup)) return;
+        if (tab.groupId > -1 && this.isTabInGroup(tab, tabGroup)) {
+            console.debug(`Nothing to do as tab is already present in the destination tab group`);
+            return;
+        }
         if (isDefined(tabGroup)) {
+            console.debug(`A tab group is already created for similar tabs. Moving the tab ${tab.url} to the group with title ${tabGroup?.title}`);
             await this.moveTabToGroup(tab, tabGroup!);
             return;
         }
         if (tab.groupId > -1) {
-            await this.moveTabToGroup(tab, null);
-            return;
+            console.debug(`Tab is found in a wrong tabGroup and an approprite tab Group doesn't exist`);
+            await this.ungroupTab(tab);
         }
 
         const similarTabs: Array<chrome.tabs.Tab> = await this.getAllTabsWithIdentifer(groupingKey, tab.windowId);
@@ -96,11 +100,7 @@ export class ChromeTabManagerService {
 
         if (isNullOrUndefined(tab)) return;
 
-        if (isNullOrUndefined(tabGroup)) {
-            // if tabGroup is null or undefined, move tab to open area i.e., out of any tabGroup            
-            await chrome.tabs.ungroup(tab.id!);
-            return;
-        }
+        if (isNullOrUndefined(tabGroup)) return;
 
         if (this.isTabInGroup(tab, tabGroup)) {
             console.debug('Tab is already placed in correct group. No need to move the tab');
@@ -137,5 +137,13 @@ export class ChromeTabManagerService {
         console.debug(`groups created`);
         console.debug(this.groupsCreated);
         return tabGroup;
+    }
+
+    private async ungroupTab(tab: chrome.tabs.Tab): Promise<void> {
+        if (isNullOrUndefined(tab)) return;
+
+        console.debug(`ungrouping the tab with id: ${tab.id} and url: ${tab.url}`);
+        await chrome.tabs.ungroup(tab.id!);
+        return;
     }
 }
